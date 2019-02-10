@@ -1,6 +1,70 @@
 // <==== BUDGET CONTROLLER ====>
 const budgetController = (function() {
-  // Code4US
+  /**
+   *
+   * @param {String} id - item id
+   * @param {String} description - description of the transaction
+   * @param {Number} value - amount of money
+   */
+  const Expense = function(id, description, value) {
+    this.id = id;
+    this.description = description;
+    this.value = value;
+  };
+
+  /**
+   *
+   * @param {String} id - item id
+   * @param {String} description - description of the transaction
+   * @param {Number} value - amount of money
+   */
+  const Income = function(id, description, value) {
+    this.id = id;
+    this.description = description;
+    this.value = value;
+  };
+
+  // Data Structure
+  let data = {
+    allItems: {
+      exp: [],
+      inc: []
+    },
+    totals: {
+      exp: 0,
+      inc: 0
+    }
+  };
+
+  return {
+    /**
+     *
+     * @param {String} type - income or expense
+     * @param {String} des  - description
+     * @param {Number} value - amount of money
+     */
+    addItem: function(type, des, val) {
+      let newItem, ID;
+      // Create new id, check the last element and add one
+      if (data.allItems[type].length > 0) {
+        ID = data.allItems[type][data.allItems[type].length - 1].id + 1;
+      } else {
+        ID = 0;
+      }
+
+      if (type === 'exp') {
+        newItem = new Expense(ID, des, val);
+      } else if (type === 'inc') {
+        newItem = new Income(ID, des, val);
+      }
+
+      data.allItems[type].push(newItem);
+      return newItem;
+    },
+    testing: function() {
+      console.log(data);
+    }
+  };
 })();
 
 // <==== UI CONTROLLER ====>
@@ -57,6 +121,12 @@ const controller = (function(budgetCtrl, UICtrl) {
      * @TODO - Calculate AND Display Budget
      */
     let input = UICtrl.getInput();
+
+    let newItem = budgetController.addItem(
+      input.type,
+      input.description,
+      input.value
+    );
   };
 
   return {
