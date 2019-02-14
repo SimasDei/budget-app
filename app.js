@@ -10,6 +10,28 @@ const budgetController = (function() {
     this.id = id;
     this.description = description;
     this.value = value;
+    this.percentage = -1;
+  };
+
+  /**
+   * @method calcPercentage() -
+   * calculate Income Percentage
+   * @param {number} totalIncome - sum of all Income
+   */
+  Expense.prototype.calcPercentage = function(totalIncome) {
+    if (totalIncome > 0) {
+      this.percentage = Math.round((this.value / totalIncome) * 100);
+    } else {
+      this.percentage = -1;
+    }
+  };
+
+  /**
+   * @method getPercentage() -
+   * retrieve the percentage value from the Expense constructor object
+   */
+  Expense.prototype.getPercentage = function() {
+    return this.percentage;
   };
 
   /**
@@ -111,6 +133,26 @@ const budgetController = (function() {
       data.budget = data.totals.inc - data.totals.exp;
     },
     /**
+     * @method calculatePercentages() -
+     * calculate income and expense percentages
+     */
+    calculatePercentages: function() {
+      data.allItems.exp.forEach(function(item) {
+        item.calcPercentage(data.totals.inc);
+      });
+    },
+    /**
+     * @method getPercentages() -
+     * get the calculated percentages,
+     * map through the results
+     */
+    getPercentages: function() {
+      let allPercentages = data.allItems.exp.map(function(item) {
+        return item.getPercentage();
+      });
+      return allPercentages;
+    },
+    /**
      * @method getBudget() -
      * return budget total income. expenses and percentage
      */
@@ -141,7 +183,8 @@ const UIController = (function() {
     incomeLabel: '.budget__income--value',
     expensesLabel: '.budget__expenses--value',
     percentageLabel: '.budget__expenses--percentage',
-    container: '.container'
+    container: '.container',
+    expensesPercentageLabel: '.item__percentage'
   };
 
   return {
@@ -218,6 +261,37 @@ const UIController = (function() {
         document.querySelector(DOMStrings.percentageLabel).textContent = '---';
       }
     },
+    /**
+     * @method displayPercentages(percentages) -
+     * render the calculated percentages to the UI
+     * @param {array} percentages -
+     * the calculated percentages array
+     */
+    displayPercentages: function(percentages) {
+      let fields = document.querySelectorAll(
+        DOMStrings.expensesPercentageLabel
+      );
+      /**
+       * @function nodeListForEach(list,callback) -
+       * loop through the html node elements and
+       * display the calculated percentages
+       * @param {array} list - html node elements
+       * @param {function} callback - callback function
+       * to loop through the nodes
+       */
+      let nodeListForEach = function(list, callback) {
+        for (let i = 0; i < list.length; i++) {
+          callback(list[i], i);
+        }
+      };
+      nodeListForEach(fields, function(value, index) {
+        if (percentages[index] > 0) {
+          value.textContent = percentages[index] + '%';
+        } else {
+          value.textContent = '---';
+        }
+      });
+    },
     getDOMStrings: function() {
       return DOMStrings;
     }
@@ -253,7 +327,7 @@ const controller = (function(budgetCtrl, UICtrl) {
   };
 
   /**
-   * @property {function} updateBudget - calculate budget,
+   * @function updateBudget() - calculate budget,
    * return budget and Display the budget on the UI
    */
   const updateBudget = function() {
@@ -261,13 +335,24 @@ const controller = (function(budgetCtrl, UICtrl) {
     const budget = budgetCtrl.getBudget();
     UICtrl.displayBudget(budget);
   };
+  /**
+   * @function updatePercentages() -
+   * calculate percentages,
+   * Read percentages from budget controller
+   * Update the UI
+   */
+  const updatePercentages = function() {
+    budgetCtrl.calculatePercentages();
+    let percentages = budgetCtrl.getPercentages();
+    UICtrl.displayPercentages(percentages);
+  };
 
   const ctrlAddItem = function() {
     /**
-     * @property {function} getInput - Get input values
-     * @property {function} addItem - Add item to budgetController
-     * @property {function} addListItem - Add item to UI
-     * @property {function} clearFields - Clear Input Fields
+     * @method getInput - Get input values
+     * @method addItem - Add item to budgetController
+     * @method addListItem - Add item to UI
+     * @method clearFields - Clear Input Fields
      */
     let input = UICtrl.getInput();
     if (input.description !== '' && !isNaN(input.value) && input.value > 0) {
@@ -280,6 +365,7 @@ const controller = (function(budgetCtrl, UICtrl) {
       UICtrl.addListItem(newItem, input.type);
       UICtrl.clearFields();
       updateBudget();
+      updatePercentages();
     }
   };
 
@@ -301,6 +387,7 @@ const controller = (function(budgetCtrl, UICtrl) {
       UICtrl.deleteListItem(itemId);
 
       updateBudget();
+      updatePercentages();
     }
   };
 
